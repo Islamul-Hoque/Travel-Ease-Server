@@ -29,6 +29,12 @@ async function run() {
         const bookingsCollection = db.collection("bookings");
         const usersCollection = db.collection('user')
 
+        // vehicles APIs
+        app.get('/vehicles', async(req, res)=> {
+            const result = await vehiclesCollection.find().toArray();
+            res.send(result);
+        })
+
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
