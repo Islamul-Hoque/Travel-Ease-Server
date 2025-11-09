@@ -41,6 +41,12 @@ async function run() {
                 res.send(result);
             })
 
+            // All vehicles sorted by price
+            app.get('/all-vehicles', async(req, res)=> {
+                const result = await vehiclesCollection.find().sort({ pricePerDay: 1 }).toArray();
+                res.send(result);
+            })
+
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
