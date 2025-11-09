@@ -30,12 +30,14 @@ async function run() {
         const usersCollection = db.collection('user')
 
         // vehicles APIs
+            //Home vehicles
             app.get('/vehicles', async(req, res)=> {
-                const result = await vehiclesCollection.find().toArray();
+                const result = await vehiclesCollection.find().sort({createdAt: -1}).limit(6).toArray();
                 res.send(result);
             })
 
-            app.get('/vehicles/:id', async(req, res)=> {
+            //Details vehicle
+            app.get('/vehicle-details/:id', async(req, res)=> {
                 const id = req.params.id;
                 const result = await vehiclesCollection.findOne({ _id: new ObjectId(id) });
                 res.send(result);
@@ -44,6 +46,13 @@ async function run() {
             // All vehicles sorted by price
             app.get('/all-vehicles', async(req, res)=> {
                 const result = await vehiclesCollection.find().sort({ pricePerDay: 1 }).toArray();
+                res.send(result);
+            })
+
+            // Add a vehicle
+            app.post('/add-vehicle', async(req, res)=> {
+                const newVehicles = req.body
+                const result = await vehiclesCollection.insertOne(newVehicles);
                 res.send(result);
             })
 
