@@ -87,6 +87,35 @@ async function run() {
                 res.send(result);
             })
 
+        // bookings APIs
+            // Add a booking
+            app.post('/my-bookings', async(req, res)=> {
+                const newBooking = req.body
+                // Duplicate booking check
+                const query = {
+                    vehicleId: newBooking.vehicleId,
+                    userEmail: newBooking.userEmail,
+                }
+                const alreadyBooked = await bookingsCollection.findOne(query);  
+                if(alreadyBooked){
+                    return res.status(400).send({ message: 'You have already booked this vehicle' });
+                } else{
+                    const result = await bookingsCollection.insertOne(newBooking);
+                    res.send(result);
+                }
+            })
+
+            // my bookings
+            // app.get('/my-bookings', async(req, res)=> {
+            //     const email = req.query.email;
+            //     const query = {}
+            //     if(email){
+            //         query.userEmail = email
+            //     }
+            //     const result = await bookingsCollection.find(query).toArray();
+            //     res.send(result);
+            // })
+
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
