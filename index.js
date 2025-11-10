@@ -67,6 +67,19 @@ async function run() {
                 res.send(result);
             })
 
+            // Update a vehicle
+            app.patch('/my-vehicles/:id', async(req, res)=> {
+                const id = req.params.id;
+                const updatedVehicle = req.body;
+                const query = { _id: new ObjectId(id) };
+                const update = {
+                    $set: { ...updatedVehicle }
+                }
+                const options = {};
+                const result = await vehiclesCollection.updateOne(query, update, options);
+                res.send(result);
+            })
+
             // Delete a vehicle
             app.delete('/my-vehicles/:id', async(req, res)=> {
                 const id = req.params.id;
