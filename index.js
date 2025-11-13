@@ -26,7 +26,7 @@ async function run() {
         //MongoDB
         const db = client.db("travelEase");
         const vehiclesCollection = db.collection('vehicles')
-        const bookingsCollection = db.collection("bookings");
+        const bookingsCollection = db.collection("bookings")
 
         // vehicles APIs
             //Home vehicles
