@@ -43,10 +43,19 @@ async function run() {
             })
 
             // All vehicles sorted by price
-            app.get('/all-vehicles', async(req, res)=> {
-                const result = await vehiclesCollection.find().sort({ pricePerDay: 1 }).toArray();
+            app.get('/all-vehicles', async (req, res) => {
+                const sortOrder = req.query.sortOrder;
+                let sort = {};
+
+                if (sortOrder === "Low to High") {
+                    sort.pricePerDay = 1;
+                }
+                else if (sortOrder === "High to Low") {
+                    sort.pricePerDay = -1;
+                }
+                const result = await vehiclesCollection.find().sort(sort).toArray();
                 res.send(result);
-            })
+            });
 
             // Add a vehicle
             app.post('/add-vehicle', async(req, res)=> {
