@@ -9,7 +9,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 app.use(cors())
 app.use(express.json())
 
-// Database Connection
+// Database 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xue6gdd.mongodb.net/?appName=Cluster0`;
 const client = new MongoClient(uri, {
     serverApi: {
@@ -21,13 +21,12 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        await client.connect();
+        // await client.connect();
 
         //MongoDB
         const db = client.db("travelEase");
         const vehiclesCollection = db.collection('vehicles')
         const bookingsCollection = db.collection("bookings");
-        const usersCollection = db.collection('user')
 
         // vehicles APIs
             //Home vehicles
@@ -98,14 +97,14 @@ async function run() {
                 }
                 const alreadyBooked = await bookingsCollection.findOne(query);  
                 if(alreadyBooked){
-                    return res.status(400).send({ message: 'You have already booked this vehicle' });
+                    return res.send({ message: 'You have already booked this vehicle' });
                 } else{
                     const result = await bookingsCollection.insertOne(newBooking);
                     res.send(result);
                 }
             })
 
-            // my bookings
+            // Get all bookings
             app.get('/my-bookings', async(req, res)=> {
                 const email = req.query.email;
                 const query = {}
@@ -116,7 +115,7 @@ async function run() {
                 res.send(result);
             })
 
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
     // await client.close();
