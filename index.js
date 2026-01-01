@@ -31,7 +31,7 @@ async function run() {
         // vehicles APIs
             //Home vehicles
             app.get('/vehicles', async(req, res)=> {
-                const result = await vehiclesCollection.find().sort({createdAt: -1}).limit(6).toArray();
+                const result = await vehiclesCollection.find().sort({createdAt: -1}).limit(4).toArray();
                 res.send(result);
             })
 
@@ -43,19 +43,99 @@ async function run() {
             })
 
             // All vehicles sorted by price
-            app.get('/all-vehicles', async (req, res) => {
-                const sortOrder = req.query.sortOrder;
-                let sort = {};
+            // app.get('/all-vehicles', async (req, res) => {
+            //     const sortOrder = req.query.sortOrder;
+            //     let sort = {};
 
-                if (sortOrder === "Low to High") {
-                    sort.pricePerDay = 1;
-                }
-                else if (sortOrder === "High to Low") {
-                    sort.pricePerDay = -1;
-                }
-                const result = await vehiclesCollection.find().sort(sort).toArray();
-                res.send(result);
-            });
+            //     if (sortOrder === "Low to High") {
+            //         sort.pricePerDay = 1;
+            //     }
+            //     else if (sortOrder === "High to Low") {
+            //         sort.pricePerDay = -1;
+            //     }
+            //     const result = await vehiclesCollection.find().sort(sort).toArray();
+            //     res.send(result);
+            // });
+
+// Distinct filters route
+
+
+// All vehicles route
+app.get('/all-vehicles', async (req, res) => {
+  const search = req.query.search || "";
+  const sort = req.query.sort || "date-desc";
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 8;
+  const skip = (page - 1) * limit;
+
+  const filterCategory = req.query.category || "";
+  const filterLocation = req.query.location || "";
+
+  // Query builder
+  const query = {
+    status: "active",
+    $and: [
+      filterCategory ? { category: { $regex: filterCategory, $options: "i" } } : {},
+      filterLocation ? { location: { $regex: filterLocation, $options: "i" } } : {},
+      {
+        $or: [
+          { vehicleName: { $regex: search, $options: "i" } },
+          { location: { $regex: search, $options: "i" } },
+          { category: { $regex: search, $options: "i" } }
+        ]
+      }
+    ]
+  };
+
+  // Sorting map
+  const sortMap = {
+    "price-asc": { pricePerDay: 1 },
+    "price-desc": { pricePerDay: -1 },
+    "date-asc": { createdAt: 1 },
+    "date-desc": { createdAt: -1 }
+  };
+
+  try {
+    const total = await vehiclesCollection.countDocuments(query);
+    const result = await vehiclesCollection
+      .find(query)
+      .sort(sortMap[sort])
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+
+    res.send({ total, page, limit, data: result });
+  } catch (err) {
+    res.status(500).send({ error: "Failed to fetch vehicles" });
+  }
+});
+
+
+app.get('/vehicle-filters', async (req, res) => {
+  try {
+    const all = await vehiclesCollection.find({ status: "active" }).toArray();
+
+    const categories = [...new Set(all.map(v => v.category).filter(Boolean))];
+    const locations = [...new Set(all.map(v => v.location).filter(Boolean))];
+
+    console.log("Categories:", categories);
+    console.log("Locations:", locations);
+
+    res.send({ categories, locations });
+  } catch (err) {
+    console.error("Error fetching filters:", err);
+    res.status(500).send({ error: "Failed to fetch filters" });
+  }
+});
+
+
+
+
+
+
+
+
+
 
             // Add a vehicle
             app.post('/add-vehicle', async(req, res)=> {
