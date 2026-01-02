@@ -137,15 +137,30 @@ app.get('/vehicle-filters', async (req, res) => {
             })
 
             // My vehicles
-            app.get('/my-vehicles', async(req, res)=> {
-                const email = req.query.email;
-                const query = {}
-                if(email){
-                    query.userEmail = email
-                }
-                const result = await vehiclesCollection.find(query).toArray();
-                res.send(result);
-            })
+            // app.get('/my-vehicles', async(req, res)=> {
+            //     const email = req.query.email;
+            //     const query = {}
+            //     if(email){
+            //         query.userEmail = email
+            //     }
+            //     const result = await vehiclesCollection.find(query).toArray();
+            //     res.send(result);
+            // })
+ app.get('/my-vehicles', async (req, res) => {
+  const email = req.query.email;
+  const query = { status: "active" };
+  if (email) {
+    query.userEmail = email;
+  }
+  try {
+    const result = await vehiclesCollection.find(query).toArray();
+    res.send(result);
+  } catch (err) {
+    res.status(500).send({ message: "Error fetching vehicles", error: err.message });
+  }
+});
+
+
 
             // Update a vehicle
             app.patch('/my-vehicles/:id', async(req, res)=> {
@@ -159,13 +174,32 @@ app.get('/vehicle-filters', async (req, res) => {
                 const result = await vehiclesCollection.updateOne(query, update, options);
                 res.send(result);
             })
+// Soft delete a vehicle
+app.patch('/my-vehicles/:id/delete', async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await vehiclesCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { status: "deleted" } }
+    );
+
+    if (result.modifiedCount === 1) {
+      res.send({ success: true });
+    } else {
+      res.status(404).send({ message: "Vehicle not found" });
+    }
+  } catch (err) {
+    res.status(500).send({ message: "Error deleting vehicle", error: err.message });
+  }
+});
+
 
             // Delete a vehicle
-            app.delete('/my-vehicles/:id', async(req, res)=> {
-                const id = req.params.id;
-                const result = await vehiclesCollection.deleteOne({ _id: new ObjectId(id) });
-                res.send(result);
-            })
+            // app.delete('/my-vehicles/:id', async(req, res)=> {
+            //     const id = req.params.id;
+            //     const result = await vehiclesCollection.deleteOne({ _id: new ObjectId(id) });
+            //     res.send(result);
+            // })
 
         // bookings APIs
             // Add a booking
@@ -221,6 +255,59 @@ app.delete("/my-bookings/:id", async (req, res) => {
     res.send({ success: true });
   } else {
     res.status(404).send({ message: "Booking not found" });
+  }
+});
+
+//........................
+app.get("/dashboard-overview", async (req, res) => {
+  const email = req.query.email;
+
+  if (!email) {
+    return res.status(400).send({ message: "Email is required" });
+  }
+
+  try {
+    // Vehicles added by user
+    const vehiclesCount = await vehiclesCollection.countDocuments({ userEmail: email });
+
+    // Bookings made by user
+    const bookingsCount = await bookingsCollection.countDocuments({ userEmail: email });
+
+    // Deleted vehicles (status = deleted)
+    const deletedCount = await vehiclesCollection.countDocuments({
+      userEmail: email,
+      status: "deleted",
+    });
+
+    // Monthly booking timeline (safe aggregation)
+    const bookingTimeline = await bookingsCollection.aggregate([
+      {
+        $match: {
+          userEmail: email,
+          createdAt: { $type: "date" }, // ✅ only Date type
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]).toArray();
+
+    res.send({
+      vehiclesCount,
+      bookingsCount,
+      deletedCount,
+      bookingTimeline,
+    });
+  } catch (err) {
+    console.error("Dashboard overview error:", err);
+    res.status(500).send({
+      message: "Error fetching dashboard overview",
+      error: err.message,
+    });
   }
 });
 
