@@ -118,19 +118,11 @@ app.get('/vehicle-filters', async (req, res) => {
     const categories = [...new Set(all.map(v => v.category).filter(Boolean))];
     const locations = [...new Set(all.map(v => v.location).filter(Boolean))];
 
-    console.log("Categories:", categories);
-    console.log("Locations:", locations);
-
     res.send({ categories, locations });
   } catch (err) {
-    console.error("Error fetching filters:", err);
     res.status(500).send({ error: "Failed to fetch filters" });
   }
 });
-
-
-
-
 
 
 
@@ -177,32 +169,62 @@ app.get('/vehicle-filters', async (req, res) => {
 
         // bookings APIs
             // Add a booking
-            app.post('/my-bookings', async(req, res)=> {
-                const newBooking = req.body
-                // Duplicate booking check
-                const query = {
-                    vehicleId: newBooking.vehicleId,
-                    userEmail: newBooking.userEmail,
-                }
-                const alreadyBooked = await bookingsCollection.findOne(query);  
-                if(alreadyBooked){
-                    return res.send({ message: 'You have already booked this vehicle' });
-                } else{
-                    const result = await bookingsCollection.insertOne(newBooking);
-                    res.send(result);
-                }
-            })
+            // app.post('/my-bookings', async(req, res)=> {
+            //     const newBooking = req.body
+            //     // Duplicate booking check
+            //     const query = {
+            //         vehicleId: newBooking.vehicleId,
+            //         userEmail: newBooking.userEmail,
+            //     }
+            //     const alreadyBooked = await bookingsCollection.findOne(query);  
+            //     if(alreadyBooked){
+            //         return res.send({ message: 'You have already booked this vehicle' });
+            //     } else{
+            //         const result = await bookingsCollection.insertOne(newBooking);
+            //         res.send(result);
+            //     }
+            // })
 
-            // Get all bookings
-            app.get('/my-bookings', async(req, res)=> {
-                const email = req.query.email;
-                const query = {}
-                if(email){
-                    query.userEmail = email
-                }
-                const result = await bookingsCollection.find(query).toArray();
-                res.send(result);
-            })
+// Get all vehicles for booking
+app.get('/book-vehicles', async (req, res) => {
+  const result = await vehiclesCollection.find({ status: "active" }).toArray();
+  res.send(result);
+});
+
+// Add a booking
+app.post('/book-vehicles/book', async (req, res) => {
+  const newBooking = req.body;
+  const query = { vehicleId: newBooking.vehicleId, userEmail: newBooking.userEmail };
+  const alreadyBooked = await bookingsCollection.findOne(query);
+  if (alreadyBooked) {
+    return res.send({ message: 'You have already booked this vehicle' });
+  }
+  const result = await bookingsCollection.insertOne(newBooking);
+  res.send(result);
+});
+
+   // Get all bookings
+    app.get('/my-bookings', async(req, res)=> {
+        const email = req.query.email;
+        const query = {}
+        if(email){
+            query.userEmail = email
+        }
+        const result = await bookingsCollection.find(query).sort({ createdAt: 1 }).toArray();
+        res.send(result);
+    })
+
+app.delete("/my-bookings/:id", async (req, res) => {
+  const id = req.params.id;
+  const result = await bookingsCollection.deleteOne({ _id: new ObjectId(id) });
+  if (result.deletedCount === 1) {
+    res.send({ success: true });
+  } else {
+    res.status(404).send({ message: "Booking not found" });
+  }
+});
+
+
 
         // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
